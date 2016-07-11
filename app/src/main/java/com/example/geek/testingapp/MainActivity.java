@@ -67,8 +67,6 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
     String nameToRemove = "";   //часть удаления переделать потом.
     int indexToRemove = 9999;
 
-    //test 1234
-
     //вызывается автоматически при создании Activity
     @Override
     protected void onCreate(Bundle savedInstanceState) {
