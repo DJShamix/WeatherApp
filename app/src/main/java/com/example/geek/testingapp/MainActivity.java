@@ -8,13 +8,10 @@ import android.content.Intent;
 import android.content.pm.ActivityInfo;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
-import android.net.Uri;
-import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Bundle;
 import android.support.design.widget.FloatingActionButton;
 import android.support.v4.widget.SwipeRefreshLayout;
-import android.support.v7.app.ActionBarDrawerToggle;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
@@ -29,10 +26,9 @@ import android.widget.EditText;
 import android.widget.ListView;
 import android.widget.Toast;
 
-import com.example.geek.testingapp.listener.WeatherServiceListener;
-import com.shamanland.fab.ShowHideOnScroll;
-
-import org.json.JSONObject;
+import com.example.geek.testingapp.custom_list.BoxAdapter;
+import com.example.geek.testingapp.custom_list.City;
+import com.example.geek.testingapp.service.GetWeather;
 
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
@@ -41,10 +37,6 @@ import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.net.URL;
-import java.net.URLConnection;
 import java.util.ArrayList;
 import java.util.Arrays;
 
@@ -391,11 +383,11 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
 
 
     //добавляет новый город в БД
-    private void addInfoToList(String input){
+    private void addInfoToList(final String input){
 
         final ArrayList arrayList = new ArrayList<String>(Arrays.asList(input));
 
-        myTask asyncTask = (myTask) new myTask(this){
+        final GetWeather asyncTask = (GetWeather) new GetWeather(this){
             @Override
             public void processFinish(ArrayList<String> output) {
                 if(output != null) {
@@ -419,7 +411,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
                         outputFile.append("\n");
                         outputFile.close();
 
-                        citiesList.add(output.get(0));
+                        citiesList.add(0, output.get(0));
                         citiesArray.clear();
                         fillData(citiesList);
                         boxAdapter.notifyDataSetChanged();
@@ -428,7 +420,8 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
                         return;
                     }
 
-                }else Toast.makeText(getApplicationContext(), "Error: search output is NULL", Toast.LENGTH_SHORT).show();
+                }
+                else Toast.makeText(getApplicationContext(), "No weather found for city: " + input, Toast.LENGTH_SHORT).show();
             }
         };
         asyncTask.execute(arrayList);
@@ -448,7 +441,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
                 arrayList.add(cityData[0]);
             }
 
-            myTask asyncTask = (myTask) new myTask(this){
+            GetWeather asyncTask = (GetWeather) new GetWeather(this){
                 @Override
                 public void processFinish(ArrayList<String> output) {
                     if(output != null) {
@@ -461,7 +454,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
 
                         manageData("update", citiesList);
 //                        Toast.makeText(getApplicationContext(), output.get(0), Toast.LENGTH_SHORT).show();
-                    }else Toast.makeText(getApplicationContext(), "Error: search output is NULL", Toast.LENGTH_SHORT).show();
+                    }else Toast.makeText(getApplicationContext(), "Error: failed to update", Toast.LENGTH_SHORT).show();
                 }
             };
                 asyncTask.execute(arrayList);
@@ -529,129 +522,3 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
 }
 
 
-//тут мы получаем погоду с сервера
-class myTask extends AsyncTask<ArrayList<String>, Void, ArrayList<String>>{
-
-    ArrayList<String> arr = new ArrayList<String>();
-    AppCompatActivity activity;
-
-    private WeatherServiceListener listener;
-    private Exception error;
-    public static String temperatureUnit = "C";
-
-    public myTask(AppCompatActivity activity) {
-        this.listener = listener;
-        this.activity = activity;
-    }
-
-    public String getTemperatureUnit() {
-        return temperatureUnit;
-    }
-
-    @Override
-    protected void onPreExecute() {
-    }
-
-    protected ArrayList<String> doInBackground(ArrayList<String>... passing) {
-        ArrayList<String> location = passing[0];
-
-        for (int i = 0; i < location.size(); i++) {
-
-            String unit = getTemperatureUnit().equalsIgnoreCase("f") ? "f" : "c";
-
-            String YQL = String.format("select * from weather.forecast where woeid in (select woeid from geo.places(1) where text=\"%s\") and u='" + unit + "'", location.get(i));
-
-            String endpoint = String.format("https://query.yahooapis.com/v1/public/yql?q=%s&format=json", Uri.encode(YQL));
-
-            try {
-                URL url = new URL(endpoint);
-
-                URLConnection connection = url.openConnection();
-                connection.setUseCaches(false);
-
-                InputStream inputStream = connection.getInputStream();
-
-                BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream));
-                StringBuilder result = new StringBuilder();
-                String line;
-                while ((line = reader.readLine()) != null) {
-                    result.append(line);
-                }
-                JSONObject data = new JSONObject(result.toString());
-
-                JSONObject queryResults = data.optJSONObject("query");
-
-                int count = queryResults.optInt("count");
-
-                if (count == 0) {
-                    error = new LocationWeatherException("No weather information found for " + location.get(i));
-                    return null;
-                }
-
-                JSONObject dataResult = queryResults.optJSONObject("results").optJSONObject("channel");
-
-                JSONObject unitsData = dataResult.optJSONObject("units");
-                String distanceUnit = unitsData.optString("distance").toString();
-                String pressureUnit = unitsData.optString("pressure").toString();
-                String speedUnit = unitsData.optString("speed").toString();
-                String temperatureUnit = unitsData.optString("temperature").toString();
-                String units = distanceUnit + ":" + pressureUnit + ":" + speedUnit + ":" + temperatureUnit;
-
-                int temperatureData = dataResult.optJSONObject("item").optJSONObject("condition").optInt("temp");
-                String temperature = temperatureData + " °" + temperatureUnit;
-                String description = dataResult.optJSONObject("item").optJSONObject("condition").optString("text");
-                int code = dataResult.optJSONObject("item").optJSONObject("condition").optInt("code");
-                int resourceId = activity.getResources().getIdentifier("drawable/icon_" + code, null, activity.getPackageName());
-
-                JSONObject windData = dataResult.optJSONObject("wind");
-                int chill = windData.optInt("chill");
-                int direction = windData.optInt("direction");
-                double speed = windData.optDouble("speed");
-                String wind = chill + ":" + direction + ":" + speed + " " +  speedUnit;
-
-                JSONObject atmosphereData = dataResult.optJSONObject("atmosphere");
-                int humidity = atmosphereData.optInt("humidity");
-                int pressure = atmosphereData.optInt("pressure");
-                double visibility = atmosphereData.optDouble("visibility");
-                String atmosphere = humidity + ":" + pressure + " " + pressureUnit + ":" + visibility + " " + distanceUnit;
-
-//                JSONObject astronomy = dataResult.optJSONObject("atmosphere");
-//                String sunrise = astronomy.optString("sunrise");
-//                String sunset = astronomy.optString("sunset");
-
-                JSONObject locationData = dataResult.optJSONObject("location");
-                String region = locationData.optString("region");
-                String country = locationData.optString("country");
-                String locationInfo = String.format("%s, %s", locationData.optString("city"), (region.length() != 0 ? region : country));
-//                Time lastTime = Time.valueOf(dataResult.optString("lastBuildDate"));
-//  "°C"
-
-                String output = locationInfo + ":" + temperature + ":" + description + ":" + resourceId + ":" + wind + ":" + atmosphere;
-                arr.add(output);
-            } catch (Exception e) {
-                error = e;
-            }
-        }
-        return arr;
-    }
-
-    @Override
-    protected void onPostExecute(ArrayList<String> arr) {
-        if(MainActivity.dialog.isShowing()){
-            MainActivity.dialog.dismiss();
-        }
-        processFinish(arr);
-        return;
-//        super.onPostExecute(arr);
-    }
-
-    public void processFinish(ArrayList<String> output) {
-        //вызвав его, мы передаем инфу из Asinktask в место его вызова
-    }
-
-    public class LocationWeatherException extends Exception {
-        public LocationWeatherException(String detailMessage) {
-            super(detailMessage);
-        }
-    }
-}

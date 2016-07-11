@@ -1,14 +1,16 @@
-package com.example.geek.testingapp;
+package com.example.geek.testingapp.custom_list;
 
 import android.content.Context;
 import android.content.res.Resources;
-import android.graphics.drawable.Drawable;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.BaseAdapter;
 import android.widget.ImageView;
 import android.widget.TextView;
+
+import com.example.geek.testingapp.R;
+
 import java.util.ArrayList;
 
 public class BoxAdapter extends BaseAdapter{
@@ -18,7 +20,7 @@ public class BoxAdapter extends BaseAdapter{
     private Resources resources;
     private String packageName;
 
-    BoxAdapter(Context context, ArrayList<City> cities) {
+    public BoxAdapter(Context context, ArrayList<City> cities) {
         ctx = context;
         objects = cities;
         lInflater = (LayoutInflater) ctx
