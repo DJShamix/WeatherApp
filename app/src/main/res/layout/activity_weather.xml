@@ -1,143 +1,16 @@
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools" android:layout_width="match_parent"
-    android:layout_height="match_parent" android:paddingLeft="@dimen/activity_horizontal_margin"
-    android:paddingRight="@dimen/activity_horizontal_margin"
-    android:paddingTop="@dimen/activity_vertical_margin"
-    android:paddingBottom="@dimen/activity_vertical_margin" tools:context=".WeatherActivity"
+    android:layout_height="match_parent"
+    tools:context=".WeatherActivity"
     android:orientation="vertical">
 
-    <ImageView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:id="@+id/weatherIconImageView"
-        android:layout_alignParentTop="true"
-        android:src="@drawable/icon_na"
-        android:layout_centerHorizontal="true"
-        android:contentDescription="@string/condition_icon" />
-
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:textAppearance="?android:attr/textAppearanceLarge"
-        android:text="@string/temperature"
-        android:id="@+id/temperatureTextView"
-        android:layout_below="@+id/weatherIconImageView"
-        android:layout_centerHorizontal="true"
-        android:textStyle="bold"
-        android:typeface="serif" />
-
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:textAppearance="?android:attr/textAppearanceSmall"
-        android:text="@string/condition"
-        android:id="@+id/conditionTextView"
-        android:layout_below="@+id/temperatureTextView"
-        android:layout_centerHorizontal="true" />
-
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:textAppearance="?android:attr/textAppearanceMedium"
-        android:text="@string/location"
-        android:id="@+id/locationTextView"
-        android:layout_below="@+id/conditionTextView"
-        android:layout_centerHorizontal="true"
-        android:textStyle="bold" />
-
-
-    <TextView
+    <android.support.v7.widget.RecyclerView xmlns:android="http://schemas.android.com/apk/res/android"
+        xmlns:app="http://schemas.android.com/apk/res-auto"
+        android:id="@+id/weather_recycler_view"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:textAppearance="?android:attr/textAppearanceMedium"
-        android:text="@string/wind"
-        android:id="@+id/wind"
-        android:textStyle="bold"
-        android:typeface="serif"
-        android:textSize="25dp"
-        android:layout_gravity="top"
-        android:layout_marginTop="80dp"
-        android:layout_below="@+id/locationTextView"/>
+        android:layout_height="match_parent"
+        android:clipToPadding="false"
+        android:scrollbars="vertical"
+        />
 
-    <TextView
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:textAppearance="?android:attr/textAppearanceMedium"
-        android:text="@string/chill"
-        android:id="@+id/chill"
-        android:layout_below="@+id/wind"
-        android:textStyle="bold"/>
-
-    <TextView
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:textAppearance="?android:attr/textAppearanceMedium"
-        android:text="@string/direction"
-        android:id="@+id/direction"
-        android:layout_below="@+id/chill"
-        android:textStyle="bold"/>
-
-    <TextView
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:textAppearance="?android:attr/textAppearanceMedium"
-        android:text="@string/speed"
-        android:id="@+id/speed"
-        android:layout_below="@+id/direction"
-        android:textStyle="bold"/>
-
-
-    <TextView
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:textAppearance="?android:attr/textAppearanceMedium"
-        android:text="@string/atmosphere"
-        android:id="@+id/atmosphere"
-        android:textStyle="bold"
-        android:typeface="serif"
-        android:textSize="25dp"
-        android:layout_gravity="top"
-        android:layout_marginTop="270dp"
-        android:layout_marginLeft="160dp"/>
-
-    <TextView
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:textAppearance="?android:attr/textAppearanceMedium"
-        android:text="@string/humidity"
-        android:id="@+id/humidity"
-        android:layout_below="@+id/atmosphere"
-        android:textStyle="bold"
-        android:layout_marginLeft="160dp"/>
-
-    <TextView
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:textAppearance="?android:attr/textAppearanceMedium"
-        android:text="@string/pressure"
-        android:id="@+id/pressure"
-        android:layout_below="@+id/humidity"
-        android:textStyle="bold"
-        android:layout_marginLeft="160dp"/>
-
-    <TextView
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:textAppearance="?android:attr/textAppearanceMedium"
-        android:text="@string/visibility"
-        android:id="@+id/visibility"
-        android:layout_below="@+id/pressure"
-        android:textStyle="bold"
-        android:layout_marginLeft="160dp"/>
-
-
-
-    <ImageView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:src="@drawable/yahoo_logo"
-        android:layout_alignParentBottom="true"
-        android:layout_centerHorizontal="true"
-        android:id="@+id/imageView"
-        android:contentDescription="@string/powered_by_yahoo" />
 </RelativeLayout>

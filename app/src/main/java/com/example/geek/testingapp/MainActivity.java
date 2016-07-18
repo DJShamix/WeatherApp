@@ -1,6 +1,7 @@
 package com.example.geek.testingapp;
 
 import android.annotation.TargetApi;
+import android.app.ActivityOptions;
 import android.app.ProgressDialog;
 import android.content.Context;
 import android.content.DialogInterface;
@@ -14,20 +15,23 @@ import android.support.design.widget.FloatingActionButton;
 import android.support.v4.widget.SwipeRefreshLayout;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
+import android.support.v7.widget.LinearLayoutManager;
+import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.Toolbar;
+import android.transition.Explode;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
+import android.view.Window;
+import android.view.inputmethod.InputMethodManager;
 import android.widget.AdapterView;
 import android.widget.EditText;
 import android.widget.ListView;
 import android.widget.Toast;
 
-import com.example.geek.testingapp.custom_list.BoxAdapter;
-import com.example.geek.testingapp.custom_list.City;
 import com.example.geek.testingapp.service.GetWeather;
 
 import java.io.BufferedReader;
@@ -40,43 +44,41 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 
-public class MainActivity extends AppCompatActivity implements AdapterView.OnItemClickListener {
+public class MainActivity extends AppCompatActivity{
 
-    public static String PACKAGE_NAME;
+    static final int PICK_WEATHER_REQUEST = 1;  // The request code
 
-    public ArrayList<City> citiesArray = new ArrayList<City>(); //сюда кидаем инфу для отображения в ListView
-    public ArrayList<String> citiesList; //тут мы храним всю инфу о городах
-    BoxAdapter boxAdapter;
+    RecyclerView recyclerView;
+    RecyclerAdapter adapter;
 
     private EditText txtInput;
-    ListView listView;
 
     SwipeRefreshLayout swiperefresh;
 
     public final String fileName = "cacheInfo.txt"; //название файла кеша.
     public static String[] cities;
+    FileOutputStream fop = null;
     static File mFolder;
     static File cityFile;
-
-    FileOutputStream fop = null;
 
     public static ProgressDialog dialog;
 
     AlertDialog.Builder ad;
-    Context context;
-    String nameToRemove = "";   //часть удаления переделать потом.
-    int indexToRemove = 9999;
+    Context context;        //часть удаления переделать потом.
+    int indexToRemove;
 
     //вызывается автоматически при создании Activity
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+        getWindow().requestFeature(Window.FEATURE_CONTENT_TRANSITIONS);
+
         super.onCreate(savedInstanceState);
 
         //мщем компоненты для работы с GUI
-        LayoutInflater inflater = getLayoutInflater();
+        final LayoutInflater inflater = getLayoutInflater();
         setContentView(inflater.inflate(R.layout.activity_main, null));
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
-        listView = (ListView) findViewById(R.id.lwMain);
+        recyclerView = (RecyclerView) findViewById(R.id.my_recycler_view);
         FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
 
         mFolder = new File(getFilesDir() + "/");
@@ -88,10 +90,23 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
 
 
         //создаем ListView
-        citiesList = new ArrayList<>(Arrays.asList(cities));
-        fillData(citiesList);
-        boxAdapter = new BoxAdapter(this, citiesArray);
-        listView.setAdapter(boxAdapter);
+        ArrayList<String> citiesList = new ArrayList<>(Arrays.asList(cities));
+        adapter=new RecyclerAdapter(this, citiesList);
+        recyclerView.setAdapter(adapter);
+        recyclerView.setHasFixedSize(true);
+        recyclerView.setLayoutManager(new LinearLayoutManager(this));
+        recyclerView.addOnItemTouchListener(
+                new RecyclerItemClickListener(getApplicationContext(), recyclerView ,new RecyclerItemClickListener.OnItemClickListener() {
+                    @Override public void onItemClick(View view, int position) {
+                        onItemClickAction(view, position);
+                    }
+
+                    @Override public void onLongItemClick(View view, int position) {
+                        indexToRemove = position;
+                        ad.show();
+                    }
+                })
+        );
 
 
         //устанавливаем swipeToUpdate
@@ -110,17 +125,19 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         //инициализируем диалог для подтверждения удаления элемента списка
         context = MainActivity.this;
         ad = new AlertDialog.Builder(context);
-        ad.setTitle("Сделай выбор");  // заголовок
+        ad.setTitle("Подтвердите удаление");  // заголовок
         ad.setMessage("Вы уверены, что хотите удалить?"); // сообщение
         final String btn_yes = "Да";
         final String btn_no = "Нет";
 
         ad.setPositiveButton(btn_yes, new DialogInterface.OnClickListener() {
             public void onClick(DialogInterface dialog, int arg1) {
-                removeItem(indexToRemove);
+                RecyclerAdapter.forRemove(indexToRemove);
+                adapter.notifyItemRemoved(indexToRemove);
+                manageData("update", adapter.getCity());
 
                 Toast.makeText(getApplicationContext(), "Удалено",
-                        Toast.LENGTH_LONG).show();
+                        Toast.LENGTH_SHORT).show();
             }
         });
         ad.setNegativeButton(btn_no, new DialogInterface.OnClickListener() {
@@ -130,28 +147,11 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         ad.setCancelable(true);
 
 
-        //устанавливаем обработчик нажатия на элементы
-        listView.setLongClickable(true);
-        listView.setOnItemLongClickListener(new AdapterView.OnItemLongClickListener() {
-            @TargetApi(Build.VERSION_CODES.LOLLIPOP)
-            @Override
-            public boolean onItemLongClick(AdapterView<?> arg0, View arg1,
-                                           final int arg2, long arg3) {
-                String[] itemName = arg0.getItemAtPosition(arg2).toString().split("\n");
-                nameToRemove = itemName[0];
-                indexToRemove = arg2;
-
-                ad.show();
-
-                return true;
-            }
-        });
-        listView.setOnItemClickListener(this);
 //        listView.setOnTouchListener(new ShowHideOnScroll(fab));
         fab.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                showInputDialog();
+                showInputDialog(view);
             }
         });
 
@@ -160,97 +160,17 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
 
 
-        PACKAGE_NAME = getApplicationContext().getPackageName();
         toolbar.setClickable(true);
         setSupportActionBar(toolbar);
+
+//        updateInfo();
     }
 
-
-    //ф-я для редактирования listView
-    void fillData(ArrayList<String> cityInput) {
-        if(cityInput.get(0).toString().split(":").length >= 3) {
-            for (int i = 0; i < cityInput.size(); i++) {
-                String[] current_city = cityInput.get(i).split(":");
-                citiesArray.add(new City(current_city[0], current_city[2],
-                        Integer.parseInt(current_city[3]), current_city[1]));
-            }
-        }else{
-            cityFile.delete();
-            ArrayList<String> na = new ArrayList<String>();
-            manageData("isFileExist", na);
-            manageData("read", na); //получаем данные из файла и записываем в cities
-            citiesList = new ArrayList<>(Arrays.asList(cities));
-            fillData(citiesList);
-        }
-    }
-
-
-    //удаляет элемент из БД
-    private void removeItem(int index){
-        citiesArray.remove(index);
-        citiesList.remove(index);
-        boxAdapter.notifyDataSetChanged();
-        manageData("update", citiesList);
-        nameToRemove = "";
-        indexToRemove = 9999;
-        return;
-    }
-
-
-    //показывает диалог для ввода города в базу данных
-    protected void showInputDialog() {
-        // get prompts.xml view
-
-        LayoutInflater layoutInflater = LayoutInflater.from(MainActivity.this);
-        View promptView = layoutInflater.inflate(R.layout.info_add, null);
-        AlertDialog.Builder alertDialogBuilder = new AlertDialog.Builder(MainActivity.this);
-        alertDialogBuilder.setView(promptView);
-
-        final EditText editText = (EditText) promptView.findViewById(R.id.editText);
-
-        // setup a dialog window
-        alertDialogBuilder.setCancelable(false)
-                .setPositiveButton("OK", new DialogInterface.OnClickListener() {
-                    public void onClick(DialogInterface dialog, int id) {
-                        if (isOnline() == true) {
-                            String newCity = editText.getText().toString();
-                             if (newCity.matches("") != true && newCity.matches(" ") != true) {
-                                 Log.d("My log", "Внесено:'" + newCity + "'");
-                                 showDialog();
-                                 addInfoToList(newCity);
-//                                     weatherService.refreshWeather(newCity);
-                             }
-                        }else Toast.makeText(getApplicationContext(), R.string.no_internet, Toast.LENGTH_SHORT).show();
-                    }
-                })
-                .setNegativeButton("Cancel",
-                        new DialogInterface.OnClickListener() {
-                            public void onClick(DialogInterface dialog, int id) {
-                                dialog.cancel();
-                            }
-                        });
-        AlertDialog alert = alertDialogBuilder.create();
-        alert.show();
-    }
-
-
-    //показывает WaitDialog, чтобы у юзера не было возможности "понажимать" во время обновления
-    public void showDialog(){
-        dialog = new ProgressDialog(this);
-        dialog.setMessage(getString(R.string.loading));
-        dialog.setCancelable(false);
-        dialog.show();
-    }
-
-
-    //обрабатывает нажатия на элемент списка (город) и передает данные в WeatherActivity с последующим его запуском
-    @Override
-    public void onItemClick(AdapterView parent, View view, int position, long id) {
+    private void onItemClickAction(View view, int position){
         try {
+            Intent intent = new Intent(getApplicationContext(), WeatherActivity.class);
 
-            Intent intent = new Intent(this, WeatherActivity.class);
-
-            String[] itemName = citiesList.get(position).split(":");    //делим строку на массим и кидаем в Intent
+            String[] itemName = adapter.getCity().get(position).split(":");    //делим строку на массим и кидаем в Intent
             intent.putExtra("location", itemName[0]);
 
             if (!isOnline()) {
@@ -265,11 +185,99 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
                 intent.putExtra("visibility", itemName[9]);
             }
 
-            setResult(RESULT_OK, intent);
-            startActivity(intent);
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                getWindow().setExitTransition(new Explode());
+                setResult(RESULT_OK, intent);
+                startActivityForResult(intent, PICK_WEATHER_REQUEST, ActivityOptions
+                        .makeSceneTransitionAnimation(this).toBundle());
+            }else {
+                setResult(RESULT_OK, intent);
+                startActivityForResult(intent, PICK_WEATHER_REQUEST);
+            }
         }catch (Exception ex){
             return;
         }
+    }
+
+
+//    //ф-я для редактирования listView
+//    void fillData(ArrayList<String> cityInput) {
+//        if(cityInput.get(0).toString().split(":").length >= 3) {
+//            for (int i = 0; i < cityInput.size(); i++) {
+//                String[] current_city = cityInput.get(i).split(":");
+////                citiesArray.add(new City(current_city[0], current_city[2],
+////                        Integer.parseInt(current_city[3]), current_city[1]));
+//            }
+//        }else{
+//            cityFile.delete();
+//            ArrayList<String> na = new ArrayList<String>();
+//            manageData("isFileExist", na);
+//            manageData("read", na); //получаем данные из файла и записываем в cities
+//            citiesList = new ArrayList<>(Arrays.asList(cities));
+//            fillData(citiesList);
+//        }
+//    }
+
+
+    //показывает диалог для ввода города в базу данных
+    protected void showInputDialog(final View view) {
+        // get prompts.xml view
+
+        LayoutInflater layoutInflater_dialog = LayoutInflater.from(MainActivity.this);
+        View promptView = layoutInflater_dialog.inflate(R.layout.info_add, null);
+        AlertDialog.Builder alertDialogBuilder = new AlertDialog.Builder(MainActivity.this);
+        alertDialogBuilder.setView(promptView);
+
+        final EditText editText = (EditText) promptView.findViewById(R.id.editText);
+        editText.requestFocus();
+        showSoftKeyboard(view);
+
+        // setup a dialog window
+        alertDialogBuilder.setCancelable(false)
+                .setPositiveButton("OK", new DialogInterface.OnClickListener() {
+                    public void onClick(DialogInterface dialog, int id) {
+                        hideSoftKeyboard(view);
+                        if (isOnline() == true) {
+                            String newCity = editText.getText().toString();
+                             if (newCity.matches("") != true && newCity.matches(" ") != true) {
+                                 Log.d("My log", "Внесено:'" + newCity + "'");
+                                 showDialog();
+                                 addInfoToList(newCity);
+//                                     weatherService.refreshWeather(newCity);
+                             }
+                        }else Toast.makeText(getApplicationContext(), R.string.no_internet, Toast.LENGTH_SHORT).show();
+                    }
+                })
+                .setNegativeButton("Cancel",
+                        new DialogInterface.OnClickListener() {
+                            public void onClick(DialogInterface dialog, int id) {
+                                hideSoftKeyboard(view);
+                                dialog.cancel();
+                            }
+                        });
+        AlertDialog alert = alertDialogBuilder.create();
+        alert.show();
+    }
+
+    //отображение и скрытие клавиатуры
+    public void showSoftKeyboard(View view) {
+            InputMethodManager imm = (InputMethodManager)
+                    getSystemService(Context.INPUT_METHOD_SERVICE);
+            imm.toggleSoftInput(InputMethodManager.SHOW_FORCED, 0);
+    }
+    public void hideSoftKeyboard(View view){
+        InputMethodManager imm = (InputMethodManager)
+                getSystemService(Context.INPUT_METHOD_SERVICE);
+        imm.toggleSoftInput(InputMethodManager.HIDE_IMPLICIT_ONLY, 0);
+    }
+
+
+    //показывает WaitDialog, чтобы у юзера не было возможности "понажимать" во время обновления
+    public void showDialog(){
+        dialog = new ProgressDialog(this);
+        dialog.setMessage(getString(R.string.loading));
+        dialog.setCancelable(false);
+        dialog.show();
     }
 
 
@@ -375,12 +383,6 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         }
     }
 
-    public static void forManageData(ArrayList<String> cityName){
-        MainActivity main = new MainActivity();
-        main.manageData("update", cityName);
-        return;
-    }
-
 
     //добавляет новый город в БД
     private void addInfoToList(final String input){
@@ -411,10 +413,9 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
                         outputFile.append("\n");
                         outputFile.close();
 
-                        citiesList.add(0, output.get(0));
-                        citiesArray.clear();
-                        fillData(citiesList);
-                        boxAdapter.notifyDataSetChanged();
+                        RecyclerAdapter.forAdd(output.get(0).toString(), adapter.getItemCount()+1);
+                        adapter.notifyItemInserted(adapter.getItemCount());
+                        adapter.notifyDataSetChanged();
                     } catch (Exception ex) {
                         Log.d("My log", "Ошибка " + ex);
                         return;
@@ -430,14 +431,14 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
 
     //ф-я обновления информации
     public void updateInfo(){
-        if(isOnline() == true) {
+        if(isOnline()) {
 
             showDialog();
 
             ArrayList<String> arrayList = new ArrayList<String>();
 
-            for (int i = 0; i < citiesList.size(); i++) {
-                String[] cityData = citiesList.get(i).split(":");
+            for (int i = 0; i < adapter.getCity().size(); i++) {
+                String[] cityData = adapter.getCity().get(i).split(":");
                 arrayList.add(cityData[0]);
             }
 
@@ -445,16 +446,13 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
                 @Override
                 public void processFinish(ArrayList<String> output) {
                     if(output != null) {
-                        citiesList.clear();
-                        citiesArray.clear();
-                        citiesList.addAll(output);
+                        adapter.updateCity(output);
+                        adapter.notifyDataSetChanged();
 
-                        fillData(citiesList);
-                        boxAdapter.notifyDataSetChanged();
-
-                        manageData("update", citiesList);
-//                        Toast.makeText(getApplicationContext(), output.get(0), Toast.LENGTH_SHORT).show();
-                    }else Toast.makeText(getApplicationContext(), "Error: failed to update", Toast.LENGTH_SHORT).show();
+                        manageData("update", adapter.getCity());
+                    }else{
+                        Toast.makeText(getApplicationContext(), "Error: failed to update", Toast.LENGTH_SHORT).show();
+                    }
                 }
             };
                 asyncTask.execute(arrayList);
@@ -464,8 +462,8 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
 
 
     public boolean onCreateOptionsMenu(Menu menu) {
-        MenuInflater inflater = getMenuInflater();
-        inflater.inflate(R.menu.main_menu, menu);
+        MenuInflater Menuinflater = getMenuInflater();
+        Menuinflater.inflate(R.menu.main_menu, menu);
         return super.onCreateOptionsMenu(menu);
     }
 
@@ -493,6 +491,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
     }
 
 
+    //изменение состояний activity
     @Override
     protected void onResume() {
 //        citiesList = new ArrayList<>(Arrays.asList(cities));
@@ -509,6 +508,17 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
 //        listView.setAdapter(adapter);
 //        adapter.notifyDataSetChanged();
         super.onStart();
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        if (isOnline() && requestCode == PICK_WEATHER_REQUEST && resultCode == 2560) {
+            ArrayList<String> passedItem = new ArrayList<String>();
+            passedItem = data.getStringArrayListExtra("passed_item");
+            adapter.updateCity(passedItem);
+            adapter.notifyDataSetChanged();
+        }
     }
 
 

@@ -8,7 +8,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:textAppearance="?android:attr/textAppearanceMedium"
-        android:text="Enter city"
+        android:text=""
         android:id="@+id/textView" />
 
     <EditText
@@ -16,6 +16,7 @@
         android:layout_width="fill_parent"
         android:layout_height="wrap_content"
         android:hint="Enter city name here.."
-        android:padding="10dp" />
+        android:padding="10dp"
+        android:inputType= "text" />
 
 </LinearLayout>
