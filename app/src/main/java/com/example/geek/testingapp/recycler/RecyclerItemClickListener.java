@@ -1,4 +1,4 @@
-package com.example.geek.testingapp;
+package com.example.geek.testingapp.recycler;
 
 import android.content.Context;
 import android.support.v7.widget.RecyclerView;

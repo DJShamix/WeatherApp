@@ -35,7 +35,7 @@
             android:layout_height="wrap_content"
             android:layout_marginLeft="16dp"
             android:layout_toRightOf="@+id/list_avatar"
-            android:text="Android "
+            android:text="База данных пуста"
             android:textColor="#000000"
             android:textAppearance="?attr/textAppearanceListItem"
             android:textSize="16sp" />
@@ -50,7 +50,7 @@
             android:textColor="#000000"
             android:ellipsize="end"
             android:singleLine="true"
-            android:text="Place to dive into android programming"
+            android:text="Добавьте ваш первый город"
             android:textAppearance="?attr/textAppearanceListItem"
             android:textSize="14sp" />
     </RelativeLayout>

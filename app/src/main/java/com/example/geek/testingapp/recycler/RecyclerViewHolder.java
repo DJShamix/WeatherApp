@@ -1,9 +1,11 @@
-package com.example.geek.testingapp;
+package com.example.geek.testingapp.recycler;
 
 import android.support.v7.widget.RecyclerView;
 import android.view.View;
 import android.widget.ImageView;
 import android.widget.TextView;
+
+import com.example.geek.testingapp.R;
 
 public class RecyclerViewHolder extends RecyclerView.ViewHolder {
 

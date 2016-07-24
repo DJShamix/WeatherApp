@@ -1,230 +1,259 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    android:orientation="vertical" android:layout_width="match_parent"
-    android:layout_height="match_parent">
+<android.support.design.widget.CoordinatorLayout
+    android:id="@+id/coord_layout"
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:fitsSystemWindows="true">
 
-    <android.support.v7.widget.CardView
-        xmlns:card_view="http://schemas.android.com/apk/res-auto"
-        android:id="@+id/cv_title"
-        android:layout_gravity="center"
+    <android.support.design.widget.AppBarLayout
+        android:id="@+id/appbar"
         android:layout_width="match_parent"
-        android:layout_height="380dp"
-        android:layout_margin="8dp">
+        android:layout_height="@dimen/app_bar_height"
+        android:fitsSystemWindows="true"
+        android:theme="@style/ThemeOverlay.AppCompat.Dark.ActionBar">
 
-        <RelativeLayout
+        <android.support.design.widget.CollapsingToolbarLayout
+            android:id="@+id/collapsing_toolbar"
             android:layout_width="match_parent"
-            android:layout_height="match_parent">
+            android:layout_height="match_parent"
+            android:fitsSystemWindows="true"
+            android:theme="@style/ThemeOverlay.AppCompat.Dark"
+            app:statusBarScrim="@color/colorPrimaryDark"
+            app:contentScrim="@color/colorPrimary"
+            app:expandedTitleMarginEnd="@dimen/article_keylines"
+            app:expandedTitleMarginStart="@dimen/md_keylines"
+            app:layout_scrollFlags="scroll|exitUntilCollapsed">
 
             <ImageView
-                android:id="@+id/cv_city_avatar"
+                android:id="@+id/image"
                 android:layout_width="match_parent"
                 android:layout_height="250dp"
-                android:layout_alignParentTop="true"
+                android:background="@drawable/icon_background"
+                android:fitsSystemWindows="true"
                 android:scaleType="centerCrop"
-                android:src="@drawable/icon_background" />
+                app:layout_collapseMode="parallax" />
 
-            <TextView
-                android:id="@+id/cv_city"
+            <android.support.v7.widget.Toolbar
+                android:id="@+id/toolbar_weather"
                 android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:gravity="center"
-                android:paddingTop="45dp"
-                android:textStyle="bold"
-                android:textSize="45dp"
-                android:text="Город"/>
-            <TextView
-                android:id="@+id/cv_country"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_below="@+id/cv_city_avatar"
-                android:maxLines="3"
-                android:padding="8dp"
-                android:text="Russia"
-                android:textColor="#222"
-                android:textStyle="bold"
-                android:textSize="22dp" />
+                android:layout_height="?attr/actionBarSize"
+                app:layout_collapseMode="pin"
+                app:popupTheme="@style/ThemeOverlay.AppCompat.Light" />
 
-            <TextView
-                android:id="@+id/cv_description"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_below="@+id/cv_country"
-                android:maxLines="3"
-                android:padding="8dp"
-                android:text="Описание"
-                android:textColor="#666"
-                android:textSize="14dp" />
-        </RelativeLayout>
+        </android.support.design.widget.CollapsingToolbarLayout>
 
-    </android.support.v7.widget.CardView>
+    </android.support.design.widget.AppBarLayout>
 
-    <android.support.v7.widget.CardView
-        xmlns:card_view="http://schemas.android.com/apk/res-auto"
-        android:id="@+id/wind"
-        android:layout_gravity="center"
+    <android.support.v4.widget.NestedScrollView
+        android:id="@+id/scroll"
         android:layout_width="match_parent"
-        android:layout_height="100dp"
-        android:layout_margin="8dp">
+        android:layout_height="match_parent"
+        android:clipToPadding="false"
+        app:layout_behavior="@string/appbar_scrolling_view_behavior">
 
-        <RelativeLayout
+        <LinearLayout
             android:layout_width="match_parent"
-            android:layout_height="match_parent">
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:paddingTop="10dp">
 
-            <TextView
-                android:id="@+id/cv_chill"
+            <android.support.v7.widget.CardView
+                xmlns:card_view="http://schemas.android.com/apk/res-auto"
+                android:id="@+id/cv_title"
+                android:layout_gravity="center"
                 android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:gravity="left"
-                android:paddingLeft="8dp"
-                android:paddingTop="8dp"
-                android:textStyle="bold"
-                android:textSize="22dp"
-                android:text="Chill"/>
-            <TextView
-                android:id="@+id/cv_mChill"
-                android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:gravity="bottom|left"
-                android:padding="8dp"
-                android:textStyle="bold"
-                android:textSize="22dp"
-                android:text="0 %"/>
+                android:layout_height="250dp"
+                android:layout_margin="8dp"
+                app:cardElevation="@dimen/spacing_medium">
 
+                <RelativeLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent">
 
-            <TextView
-                android:id="@+id/speed"
-                android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:gravity="center_horizontal"
-                android:maxLines="3"
-                android:padding="8dp"
-                android:text="Speed"
-                android:textStyle="bold"
-                android:textSize="22dp" />
-            <TextView
-                android:id="@+id/cv_mSpeed"
-                android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:gravity="bottom|center"
-                android:padding="8dp"
-                android:maxLines="3"
-                android:text="0 km/h"
-                android:textStyle="bold"
-                android:textSize="22dp" />
+                    <TextView
+                        android:id="@+id/cv_country"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginLeft="@dimen/spacing_large"
+                        android:layout_marginRight="@dimen/spacing_large"
+                        android:layout_marginTop="@dimen/spacing_large"
+                        android:textAppearance="@style/TextAppearance.AppCompat.Headline"/>
 
+                    <TextView
+                        android:id="@+id/cv_description"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_below="@+id/cv_country"
+                        android:layout_margin="@dimen/spacing_large"
+                        android:text="@string/kazan_descr"
+                        android:maxLines="8"
+                        android:textAppearance="@style/TextAppearance.AppCompat.Body1"/>
+                </RelativeLayout>
 
-            <TextView
-                android:id="@+id/cv_direction"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_alignRight="@+id/speed"
-                android:maxLines="3"
-                android:padding="8dp"
-                android:text="Direction"
-                android:textStyle="bold"
-                android:textSize="22dp" />
-            <TextView
-                android:id="@+id/cv_mDirection"
-                android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:gravity="bottom|right"
-                android:maxLines="3"
-                android:padding="8dp"
-                android:text="0°"
-                android:textStyle="bold"
-                android:textSize="22dp" />
+            </android.support.v7.widget.CardView>
 
-        </RelativeLayout>
-
-    </android.support.v7.widget.CardView>
-
-    <android.support.v7.widget.CardView
-        xmlns:card_view="http://schemas.android.com/apk/res-auto"
-        android:id="@+id/cv_atmosphere"
-        android:layout_gravity="center"
-        android:layout_width="match_parent"
-        android:layout_height="100dp"
-        android:layout_margin="8dp">
-
-        <RelativeLayout
+            <android.support.v7.widget.CardView
+            xmlns:card_view="http://schemas.android.com/apk/res-auto"
+            android:id="@+id/wind"
+            android:layout_gravity="center"
             android:layout_width="match_parent"
-            android:layout_height="match_parent">
+            android:layout_height="100dp"
+            android:layout_margin="8dp"
+            app:cardElevation="@dimen/spacing_medium">
 
-            <ImageView
-                android:id="@+id/cv_weather_icon"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:adjustViewBounds="true"
-                android:maxWidth="50dp"
-                android:maxHeight="50dp"
-                android:scaleType="fitCenter"
-                android:layout_marginLeft="70dp"
-                android:layout_marginTop="8dp"
-                android:src="@drawable/icon_na" />
-
-            <TextView
-                android:id="@+id/temperature"
+            <RelativeLayout
                 android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:gravity="left"
-                android:paddingLeft="8dp"
-                android:paddingTop="8dp"
-                android:textStyle="bold"
-                android:textSize="22dp"
-                android:text="Temp"/>
-            <TextView
-                android:id="@+id/cv_mTemperature"
+                android:layout_height="match_parent">
+
+                <TextView
+                    android:id="@+id/cv_chill"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:gravity="left"
+                    android:paddingLeft="8dp"
+                    android:paddingTop="8dp"
+                    android:textAppearance="@style/TextAppearance.AppCompat.Body1"
+                    android:textSize="22dp"
+                    android:text="Chill"/>
+                <TextView
+                    android:id="@+id/cv_mChill"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:gravity="bottom|left"
+                    android:padding="8dp"
+                    android:textAppearance="@style/TextAppearance.AppCompat.Body2"
+                    android:textSize="22dp"
+                    android:text="0 %"/>
+
+
+                <TextView
+                    android:id="@+id/speed"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:gravity="center_horizontal"
+                    android:maxLines="3"
+                    android:padding="8dp"
+                    android:text="Speed"
+                    android:textAppearance="@style/TextAppearance.AppCompat.Body1"
+                    android:textSize="22dp" />
+                <TextView
+                    android:id="@+id/cv_mSpeed"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:gravity="bottom|center"
+                    android:padding="8dp"
+                    android:maxLines="3"
+                    android:text="0 km/h"
+                    android:textAppearance="@style/TextAppearance.AppCompat.Body2"
+                    android:textSize="22dp" />
+
+
+                <TextView
+                    android:id="@+id/cv_direction"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_alignRight="@+id/speed"
+                    android:maxLines="3"
+                    android:padding="8dp"
+                    android:text="Direction"
+                    android:textAppearance="@style/TextAppearance.AppCompat.Body1"
+                    android:textSize="22dp" />
+                <TextView
+                    android:id="@+id/cv_mDirection"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:gravity="bottom|right"
+                    android:maxLines="3"
+                    android:padding="8dp"
+                    android:text="0°"
+                    android:textAppearance="@style/TextAppearance.AppCompat.Body2"
+                    android:textSize="22dp" />
+
+            </RelativeLayout>
+
+        </android.support.v7.widget.CardView>
+
+            <android.support.v7.widget.CardView
+                xmlns:card_view="http://schemas.android.com/apk/res-auto"
+                android:id="@+id/cv_atmosphere"
+                android:layout_gravity="center"
                 android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:gravity="bottom|left"
-                android:padding="8dp"
-                android:textStyle="bold"
-                android:textSize="22dp"
-                android:text="0°"/>
+                android:layout_height="100dp"
+                android:layout_margin="8dp"
+                app:cardElevation="@dimen/spacing_medium">
+
+                <RelativeLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent">
+
+                    <TextView
+                        android:id="@+id/temperature"
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:gravity="start"
+                        android:paddingLeft="8dp"
+                        android:paddingTop="8dp"
+                        android:textAppearance="@style/TextAppearance.AppCompat.Body1"
+                        android:textSize="22dp"
+                        android:text="Temp"/>
+                    <TextView
+                        android:id="@+id/cv_mTemperature"
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:gravity="bottom|start"
+                        android:padding="8dp"
+                        android:textAppearance="@style/TextAppearance.AppCompat.Body2"
+                        android:textSize="22dp"
+                        android:text="0°"/>
 
 
-            <TextView
-                android:id="@+id/pressure"
-                android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:gravity="center_horizontal"
-                android:padding="8dp"
-                android:text="Pressure"
-                android:textStyle="bold"
-                android:textSize="22dp" />
-            <TextView
-                android:id="@+id/cv_mPressure"
-                android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:gravity="bottom|center"
-                android:padding="8dp"
-                android:text="0 mm/hg"
-                android:textStyle="bold"
-                android:textSize="22dp" />
+                    <TextView
+                        android:id="@+id/pressure"
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:gravity="center_horizontal"
+                        android:padding="8dp"
+                        android:text="Pressure"
+                        android:textAppearance="@style/TextAppearance.AppCompat.Body1"
+                        android:textSize="22dp" />
+                    <TextView
+                        android:id="@+id/cv_mPressure"
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:gravity="bottom|center"
+                        android:padding="8dp"
+                        android:text="0 mm/hg"
+                        android:textAppearance="@style/TextAppearance.AppCompat.Body2"
+                        android:textSize="22dp" />
 
 
-            <TextView
-                android:id="@+id/humidity"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_alignRight="@+id/pressure"
-                android:maxLines="3"
-                android:padding="8dp"
-                android:text="Humidity"
-                android:textStyle="bold"
-                android:textSize="22dp" />
-            <TextView
-                android:id="@+id/cv_mHumidity"
-                android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:padding="8dp"
-                android:gravity="bottom|right"
-                android:text="0 %"
-                android:textStyle="bold"
-                android:textSize="22dp" />
+                    <TextView
+                        android:id="@+id/humidity"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_alignRight="@+id/pressure"
+                        android:maxLines="3"
+                        android:padding="8dp"
+                        android:text="Humidity"
+                        android:textAppearance="@style/TextAppearance.AppCompat.Body1"
+                        android:textSize="22dp" />
+                    <TextView
+                        android:id="@+id/cv_mHumidity"
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:padding="8dp"
+                        android:gravity="bottom|end"
+                        android:text="0 %"
+                        android:textAppearance="@style/TextAppearance.AppCompat.Body2"
+                        android:textSize="22dp" />
 
-        </RelativeLayout>
+                </RelativeLayout>
 
-    </android.support.v7.widget.CardView>
+            </android.support.v7.widget.CardView>
+        </LinearLayout>
 
-</LinearLayout>
+    </android.support.v4.widget.NestedScrollView>
+
+</android.support.design.widget.CoordinatorLayout>

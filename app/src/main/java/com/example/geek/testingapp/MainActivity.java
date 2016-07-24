@@ -1,17 +1,18 @@
 package com.example.geek.testingapp;
 
-import android.annotation.TargetApi;
 import android.app.ActivityOptions;
 import android.app.ProgressDialog;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.pm.ActivityInfo;
+import android.graphics.Color;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.os.Build;
 import android.os.Bundle;
 import android.support.design.widget.FloatingActionButton;
+import android.support.design.widget.Snackbar;
 import android.support.v4.widget.SwipeRefreshLayout;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
@@ -27,11 +28,12 @@ import android.view.MenuItem;
 import android.view.View;
 import android.view.Window;
 import android.view.inputmethod.InputMethodManager;
-import android.widget.AdapterView;
 import android.widget.EditText;
-import android.widget.ListView;
+import android.widget.RelativeLayout;
 import android.widget.Toast;
 
+import com.example.geek.testingapp.recycler.RecyclerAdapter;
+import com.example.geek.testingapp.recycler.RecyclerItemClickListener;
 import com.example.geek.testingapp.service.GetWeather;
 
 import java.io.BufferedReader;
@@ -52,16 +54,15 @@ public class MainActivity extends AppCompatActivity{
     RecyclerAdapter adapter;
 
     private EditText txtInput;
-
+    private SwipeRefreshLayout mRoot;
     SwipeRefreshLayout swiperefresh;
+    public static ProgressDialog dialog;
 
     public final String fileName = "cacheInfo.txt"; //название файла кеша.
     public static String[] cities;
     FileOutputStream fop = null;
     static File mFolder;
     static File cityFile;
-
-    public static ProgressDialog dialog;
 
     AlertDialog.Builder ad;
     Context context;        //часть удаления переделать потом.
@@ -70,9 +71,15 @@ public class MainActivity extends AppCompatActivity{
     //вызывается автоматически при создании Activity
     @Override
     protected void onCreate(Bundle savedInstanceState) {
-        getWindow().requestFeature(Window.FEATURE_CONTENT_TRANSITIONS);
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            getWindow().requestFeature(Window.FEATURE_CONTENT_TRANSITIONS);
+        }
 
         super.onCreate(savedInstanceState);
+
+        //этот костыль убрать потом. Пофиксить обновление инфы при пересоздании activity
+        setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
+
 
         //мщем компоненты для работы с GUI
         final LayoutInflater inflater = getLayoutInflater();
@@ -80,6 +87,7 @@ public class MainActivity extends AppCompatActivity{
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         recyclerView = (RecyclerView) findViewById(R.id.my_recycler_view);
         FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
+        mRoot = (SwipeRefreshLayout) findViewById(R.id.swiperefresh);
 
         mFolder = new File(getFilesDir() + "/");
         cityFile = new File(mFolder.getAbsolutePath() + "/" + fileName);    //путь к файлу кеша
@@ -132,12 +140,7 @@ public class MainActivity extends AppCompatActivity{
 
         ad.setPositiveButton(btn_yes, new DialogInterface.OnClickListener() {
             public void onClick(DialogInterface dialog, int arg1) {
-                RecyclerAdapter.forRemove(indexToRemove);
-                adapter.notifyItemRemoved(indexToRemove);
-                manageData("update", adapter.getCity());
-
-                Toast.makeText(getApplicationContext(), "Удалено",
-                        Toast.LENGTH_SHORT).show();
+                removeItem();
             }
         });
         ad.setNegativeButton(btn_no, new DialogInterface.OnClickListener() {
@@ -156,16 +159,16 @@ public class MainActivity extends AppCompatActivity{
         });
 
 
-        //этот костыль убрать потом. Пофиксить обновление инфы при пересоздании activity
-        setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
-
 
         toolbar.setClickable(true);
+        toolbar.setBackgroundColor(Color.TRANSPARENT);
         setSupportActionBar(toolbar);
 
 //        updateInfo();
     }
 
+
+    //при нажатии на элемент списка, идем сюда
     private void onItemClickAction(View view, int position){
         try {
             Intent intent = new Intent(getApplicationContext(), WeatherActivity.class);
@@ -200,63 +203,72 @@ public class MainActivity extends AppCompatActivity{
     }
 
 
-//    //ф-я для редактирования listView
-//    void fillData(ArrayList<String> cityInput) {
-//        if(cityInput.get(0).toString().split(":").length >= 3) {
-//            for (int i = 0; i < cityInput.size(); i++) {
-//                String[] current_city = cityInput.get(i).split(":");
-////                citiesArray.add(new City(current_city[0], current_city[2],
-////                        Integer.parseInt(current_city[3]), current_city[1]));
-//            }
-//        }else{
-//            cityFile.delete();
-//            ArrayList<String> na = new ArrayList<String>();
-//            manageData("isFileExist", na);
-//            manageData("read", na); //получаем данные из файла и записываем в cities
-//            citiesList = new ArrayList<>(Arrays.asList(cities));
-//            fillData(citiesList);
-//        }
-//    }
+    //ф-я удаление города
+    private void removeItem(){
+
+        final String backup = adapter.forGetCity().get(indexToRemove);
+
+        RecyclerAdapter.forRemove(indexToRemove);
+        adapter.notifyItemRemoved(indexToRemove);
+        manageData("update", adapter.getCity());
+
+        final Snackbar snackbar = Snackbar.make(mRoot, "Удалено", Snackbar.LENGTH_LONG);
+        snackbar.setActionTextColor(getResources().getColor(R.color.accent_color));
+        snackbar.setAction("Отмена", new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                adapter.addAt(backup, indexToRemove);
+                adapter.notifyDataSetChanged();
+                manageData("update", adapter.getCity());
+                Snackbar snackbar1 = Snackbar.make(mRoot, "City is restored!", Snackbar.LENGTH_SHORT);
+                snackbar1.show();
+            }
+        });
+        snackbar.show();
+    }
 
 
     //показывает диалог для ввода города в базу данных
     protected void showInputDialog(final View view) {
-        // get prompts.xml view
 
-        LayoutInflater layoutInflater_dialog = LayoutInflater.from(MainActivity.this);
-        View promptView = layoutInflater_dialog.inflate(R.layout.info_add, null);
-        AlertDialog.Builder alertDialogBuilder = new AlertDialog.Builder(MainActivity.this);
-        alertDialogBuilder.setView(promptView);
+        if (isOnline()) {
 
-        final EditText editText = (EditText) promptView.findViewById(R.id.editText);
-        editText.requestFocus();
-        showSoftKeyboard(view);
+            LayoutInflater layoutInflater_dialog = LayoutInflater.from(MainActivity.this);
+            View promptView = layoutInflater_dialog.inflate(R.layout.info_add, null);
+            AlertDialog.Builder alertDialogBuilder = new AlertDialog.Builder(MainActivity.this);
+            alertDialogBuilder.setView(promptView);
 
-        // setup a dialog window
-        alertDialogBuilder.setCancelable(false)
-                .setPositiveButton("OK", new DialogInterface.OnClickListener() {
-                    public void onClick(DialogInterface dialog, int id) {
-                        hideSoftKeyboard(view);
-                        if (isOnline() == true) {
-                            String newCity = editText.getText().toString();
-                             if (newCity.matches("") != true && newCity.matches(" ") != true) {
-                                 Log.d("My log", "Внесено:'" + newCity + "'");
-                                 showDialog();
-                                 addInfoToList(newCity);
-//                                     weatherService.refreshWeather(newCity);
-                             }
-                        }else Toast.makeText(getApplicationContext(), R.string.no_internet, Toast.LENGTH_SHORT).show();
-                    }
-                })
-                .setNegativeButton("Cancel",
-                        new DialogInterface.OnClickListener() {
+            final EditText editText = (EditText) promptView.findViewById(R.id.editText);
+            editText.requestFocus();
+            showSoftKeyboard(view);
+
+                // setup a dialog window
+            alertDialogBuilder.setCancelable(false)
+                        .setPositiveButton("OK", new DialogInterface.OnClickListener() {
                             public void onClick(DialogInterface dialog, int id) {
                                 hideSoftKeyboard(view);
-                                dialog.cancel();
+                                    String newCity = editText.getText().toString();
+                                     if (newCity.matches("") != true && newCity.matches(" ") != true) {
+                                         Log.d("My log", "Внесено:'" + newCity + "'");
+                                         showDialog();
+                                         addInfoToList(newCity);
+        //                                     weatherService.refreshWeather(newCity);
+                                     }
                             }
-                        });
-        AlertDialog alert = alertDialogBuilder.create();
-        alert.show();
+                        })
+                        .setNegativeButton("Cancel",
+                                new DialogInterface.OnClickListener() {
+                                    public void onClick(DialogInterface dialog, int id) {
+                                        hideSoftKeyboard(view);
+                                        dialog.cancel();
+                                    }
+                                });
+                AlertDialog alert = alertDialogBuilder.create();
+                alert.show();
+        }else{
+            Snackbar snackbar = Snackbar.make(mRoot, R.string.no_internet, Snackbar.LENGTH_LONG);
+            snackbar.show();
+        }
     }
 
     //отображение и скрытие клавиатуры
@@ -326,6 +338,7 @@ public class MainActivity extends AppCompatActivity{
                 break;
             case "isFileExist":
                 try {
+
                     if (!mFolder.exists()) {
                         mFolder.mkdir();
                     }
@@ -375,7 +388,7 @@ public class MainActivity extends AppCompatActivity{
                     }
                     System.out.println("Done");
                 }catch (IOException ex){
-                    Toast.makeText(this, "Error: Failed to update info!", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(this, R.string.failedToUpdate, Toast.LENGTH_SHORT).show();
                     return;
                 }
             default:
@@ -451,22 +464,24 @@ public class MainActivity extends AppCompatActivity{
 
                         manageData("update", adapter.getCity());
                     }else{
-                        Toast.makeText(getApplicationContext(), "Error: failed to update", Toast.LENGTH_SHORT).show();
+                        Toast.makeText(getApplicationContext(), R.string.failedToUpdate, Toast.LENGTH_SHORT).show();
                     }
                 }
             };
                 asyncTask.execute(arrayList);
+        }else {
+            Snackbar snackbar = Snackbar.make(mRoot, R.string.no_internet, Snackbar.LENGTH_LONG);
+            snackbar.show();
         }
-        else Toast.makeText(this, R.string.no_internet, Toast.LENGTH_SHORT).show();
     }
 
 
+    //для работы меню
     public boolean onCreateOptionsMenu(Menu menu) {
         MenuInflater Menuinflater = getMenuInflater();
         Menuinflater.inflate(R.menu.main_menu, menu);
         return super.onCreateOptionsMenu(menu);
     }
-
 
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
@@ -475,18 +490,12 @@ public class MainActivity extends AppCompatActivity{
 //            case R.id.action_settings:
 //                return true;
 
-//            case R.id.currentLocation:
-//                return true;
-
             case R.id.update:
                 updateInfo();
                 return true;
 
             default:
-                // If we got here, the user's action was not recognized.
-                // Invoke the superclass to handle it.
                 return super.onOptionsItemSelected(item);
-
         }
     }
 
@@ -516,8 +525,10 @@ public class MainActivity extends AppCompatActivity{
         if (isOnline() && requestCode == PICK_WEATHER_REQUEST && resultCode == 2560) {
             ArrayList<String> passedItem = new ArrayList<String>();
             passedItem = data.getStringArrayListExtra("passed_item");
-            adapter.updateCity(passedItem);
-            adapter.notifyDataSetChanged();
+            if(passedItem.size() > 0) {
+                adapter.updateCity(passedItem);
+                adapter.notifyDataSetChanged();
+            }
         }
     }
 

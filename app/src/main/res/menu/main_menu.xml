@@ -21,15 +21,14 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 -->
-<menu xmlns:android="http://schemas.android.com/apk/res/android" xmlns:phantomweather="http://schemas.android.com/apk/res-auto">
-    <!--<item android:id="@+id/currentLocation"-->
-        <!--android:icon="@drawable/icon_location"-->
-        <!--android:title="@string/update_location"-->
-        <!--phantomweather:showAsAction="never" />-->
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+
     <item android:id="@+id/update"
         android:icon="@drawable/ic_refresh"
         android:title="@string/update_location"
-        phantomweather:showAsAction="ifRoom|withText" />
+        app:showAsAction="ifRoom|withText" />
     <!--<item-->
         <!--android:id="@+id/settings"-->
         <!--android:title="@string/settings"/>-->

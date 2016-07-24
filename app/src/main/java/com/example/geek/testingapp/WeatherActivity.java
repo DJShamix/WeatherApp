@@ -12,12 +12,15 @@ import android.location.LocationListener;
 import android.location.LocationManager;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
-import android.support.v7.widget.LinearLayoutManager;
-import android.support.v7.widget.RecyclerView;
+import android.support.design.widget.CollapsingToolbarLayout;
+import android.support.design.widget.CoordinatorLayout;
+import android.support.design.widget.Snackbar;
+import android.support.v7.widget.Toolbar;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
+import android.view.View;
 import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -33,9 +36,6 @@ import com.example.geek.testingapp.listener.WeatherServiceListener;
 import com.example.geek.testingapp.service.GoogleMapsGeocodingService;
 import com.example.geek.testingapp.service.WeatherCacheService;
 import com.example.geek.testingapp.service.WeatherService;
-
-import org.json.JSONException;
-import org.json.JSONObject;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -62,6 +62,8 @@ public class WeatherActivity extends MainActivity implements WeatherServiceListe
     private GoogleMapsGeocodingService geocodingService;
     private WeatherCacheService cacheService;
     private ProgressDialog dialog;
+    CollapsingToolbarLayout collapsingToolbar = null;
+    private CoordinatorLayout mRoot;
 
     // weather service fail flag
     private boolean weatherServicesHasFailed = false;
@@ -69,7 +71,6 @@ public class WeatherActivity extends MainActivity implements WeatherServiceListe
     private SharedPreferences preferences = null;
 
     String location = null;
-
     public static String temperatureUnit = "C";
 
     @Override
@@ -77,8 +78,13 @@ public class WeatherActivity extends MainActivity implements WeatherServiceListe
         super.onCreate(savedInstanceState);
         setContentView(R.layout.card_view_list);
 
-        weatherIconImageView = (ImageView) findViewById(R.id.cv_weather_icon);
-        city_tv = (TextView) findViewById(R.id.cv_city);
+        setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT); //заместо этого сделать отдельное landscape activity .
+
+        setSupportActionBar((Toolbar) findViewById(R.id.toolbar_weather));
+        getSupportActionBar().setDisplayHomeAsUpEnabled(true);
+        collapsingToolbar = (CollapsingToolbarLayout) findViewById(R.id.collapsing_toolbar);
+
+//        weatherIconImageView = (ImageView) findViewById(R.id.cv_weather_icon);
         county_tv = (TextView) findViewById(R.id.cv_country);
         temperatureTextView = (TextView) findViewById(R.id.cv_mTemperature);
         conditionTextView = (TextView) findViewById(R.id.cv_description);
@@ -87,6 +93,7 @@ public class WeatherActivity extends MainActivity implements WeatherServiceListe
         speed = (TextView) findViewById(R.id.cv_mSpeed);
         humidity = (TextView) findViewById(R.id.cv_mHumidity);
         pressure = (TextView) findViewById(R.id.cv_mPressure);
+        mRoot = (CoordinatorLayout) findViewById(R.id.coord_layout);
 //        visibility = (TextView) findViewById(R.id.visibility);
 
         preferences = PreferenceManager.getDefaultSharedPreferences(this);
@@ -97,18 +104,25 @@ public class WeatherActivity extends MainActivity implements WeatherServiceListe
         geocodingService = new GoogleMapsGeocodingService(this);
         cacheService = new WeatherCacheService(this);
 
-        setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT); //этот костыль убрать потом. Пофиксить обновление инфы при пересоздании activity
+        update();
+    }
 
-        if(isOnline() == true){
 
-            dialog = new ProgressDialog(this);
-            dialog.setMessage(getString(R.string.loading));
-            dialog.setCancelable(false);
-            dialog.show();
+    //обновление инфы
+    private void update(){
+        if(isOnline()){
+
             Intent intent = getIntent();
             location = intent.getStringExtra("location");
 
+            collapsingToolbar.setTitle(location);
+
             if(location != null) {
+                dialog = new ProgressDialog(this);
+                dialog.setMessage(getString(R.string.loading));
+                dialog.setCancelable(false);
+                dialog.show();
+
                 Log.d("MSG FROM APP", location);
                 weatherService.refreshWeather(location);
             }
@@ -117,6 +131,7 @@ public class WeatherActivity extends MainActivity implements WeatherServiceListe
             Intent intent = getIntent();
             location = intent.getStringExtra("location");
             String[] mLocation = location.split(",");
+
             String temperature = intent.getStringExtra("temperature");
             String description = intent.getStringExtra("description");
             String imageCode = intent.getStringExtra("image");
@@ -127,50 +142,24 @@ public class WeatherActivity extends MainActivity implements WeatherServiceListe
             String pressureInfo = intent.getStringExtra("pressure");
             String visibilityInfo = intent.getStringExtra("visibility");
 
-
-            weatherIconImageView.setImageResource(Integer.parseInt(imageCode));
-            city_tv.setText(mLocation[0].trim());
+//            weatherIconImageView.setImageResource(Integer.parseInt(imageCode));
+            collapsingToolbar.setTitle(mLocation[0].trim());
             county_tv.setText(mLocation[1].trim());
             temperatureTextView.setText(temperature);
-            conditionTextView.setText(description);
+            conditionTextView.setText(R.string.kazan_descr);
             chill.setText(chillInfo + "");
             direction.setText(directionInfo + "");
             speed.setText(speedInfo + "");
             humidity.setText(humidityInfo + " %");
             pressure.setText(pressureInfo);
-            visibility.setText("Visibility: " + visibilityInfo);
+//            visibility.setText("Visibility: " + visibilityInfo);
 
-            Toast.makeText(this, R.string.no_internet, Toast.LENGTH_SHORT).show();
+            final Snackbar snackbar = Snackbar.make(mRoot, R.string.no_internet, Snackbar.LENGTH_SHORT);
+            snackbar.setActionTextColor(getResources().getColor(R.color.accent_color));
+            snackbar.show();
         }
     }
 
-    //сохраняем вид
-    protected void onSaveInstanceState(Bundle outState) {
-        super.onSaveInstanceState(outState);
-        String temperature = temperatureTextView.getText().toString();
-        String description = conditionTextView.getText().toString();
-        String location = city_tv.getText().toString();
-//        Drawable icon = weatherIconImageView.getDrawable();
-
-        outState.putString("temperature", temperature);
-        outState.putString("description", description);
-        outState.putString("location", location);
-//        outState.putParcelable("weatherIconDrawable", (Parcelable) icon);
-
-        Log.d("Weather App", "onSaveInstanceState");
-    }
-
-    //восстанавливаем сохраненный вид
-    protected void onRestoreInstanceState(Bundle savedInstanceState) {
-        super.onRestoreInstanceState(savedInstanceState);
-
-//        weatherIconImageView.setImageDrawable((Drawable) savedInstanceState.getParcelable("weatherIconDrawable"));
-
-        temperatureTextView.setText(savedInstanceState.getString("temperature"));
-        conditionTextView.setText(savedInstanceState.getString("description"));
-        city_tv.setText(savedInstanceState.getString("location"));
-        Log.d("Weather App", "onRestoreInstanceState");
-    }
 
     //получаем погоду для текущего местоположения
     private void getWeatherFromCurrentLocation() {
@@ -185,34 +174,6 @@ public class WeatherActivity extends MainActivity implements WeatherServiceListe
 
         // single location update
         locationManager.requestSingleUpdate(provider, this, null);
-    }
-
-    //это для работы меню
-    @Override
-    public boolean onCreateOptionsMenu(Menu menu) {
-        MenuInflater inflater = getMenuInflater();
-        inflater.inflate(R.menu.main_menu, menu);
-        return true;
-    }
-
-    private void startSettingsActivity() {
-        Intent intent = new Intent(this, SettingsActivity.class);
-        startActivity(intent);
-    }
-
-    @Override
-    public boolean onOptionsItemSelected(MenuItem item) {
-        switch (item.getItemId()) {
-//            case R.id.currentLocation:
-//                dialog.show();
-//                getWeatherFromCurrentLocation();
-//                return true;
-//            case R.id.settings:
-//                startSettingsActivity();
-//                return true;
-            default:
-                return super.onOptionsItemSelected(item);
-        }
     }
 
     public String getTemperatureUnit() {
@@ -233,8 +194,7 @@ public class WeatherActivity extends MainActivity implements WeatherServiceListe
 
         @SuppressWarnings("deprecation")
         Drawable weatherIconDrawable = getResources().getDrawable(resourceId);
-
-        weatherIconImageView.setImageDrawable(weatherIconDrawable);
+//        weatherIconImageView.setImageDrawable(weatherIconDrawable);
 
         String temperatureLabel = getString(R.string.temperature_output, condition.getTemperature(), "C");
         String recLocation = channel.getLocation().toString();
@@ -243,10 +203,10 @@ public class WeatherActivity extends MainActivity implements WeatherServiceListe
         String str_wind = wind.getChill() + ":" + wind.getDirection() + ":" + wind.getSpeed() + " " + units.getSpeed();
         String str_atmosphere = atmosphere.getHumidity() + ":" + atmosphere.getPressure() + " " + units.getPressure() + ":" + atmosphere.getVisibility() + " " + units.getDistance();
 
+        collapsingToolbar.setTitle(mLocation[0].trim());
+        county_tv.setText(mLocation[1].trim());
         temperatureTextView.setText(temperatureLabel);
         conditionTextView.setText(condition.getDescription());
-        city_tv.setText(mLocation[0].trim());
-        county_tv.setText(mLocation[1].trim());
         chill.setText(wind.getChill() + "");
         direction.setText(wind.getDirection() + "");
         speed.setText(wind.getSpeed() + " " + units.getSpeed());
@@ -343,15 +303,36 @@ public class WeatherActivity extends MainActivity implements WeatherServiceListe
     @Override
     public void onProviderEnabled(String s) {
         Toast.makeText(this, "Now app works online!", Toast.LENGTH_SHORT).show();
-//        Snackbar.make(getCurrentFocus(), "Now app works online", Snackbar.LENGTH_LONG)
-//                .setAction("Action", null).show();
     }
 
     @Override
     public void onProviderDisabled(String s) {
         Toast.makeText(this, "Now app works offline!", Toast.LENGTH_SHORT).show();
-//        Snackbar.make(getCurrentFocus(), "Now app works offline", Snackbar.LENGTH_LONG)
-//                .setAction("Action", null).show();
+    }
+
+
+    //для работы меню
+    public boolean onCreateOptionsMenu(Menu menu) {
+        MenuInflater Menuinflater = getMenuInflater();
+//        Menuinflater.inflate(R.menu.main_menu, menu);
+        return super.onCreateOptionsMenu(menu);
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+
+        switch (item.getItemId()) {
+            case R.id.action_settings:
+                Toast.makeText(WeatherActivity.this, "Settings", Toast.LENGTH_SHORT).show();
+                return true;
+
+            case R.id.update:
+                update();
+                return true;
+
+            default:
+                return super.onOptionsItemSelected(item);
+        }
     }
 
     @Override
