@@ -9,6 +9,7 @@ import android.view.ViewGroup;
 import com.example.geek.testingapp.R;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 
 public class RecyclerAdapter extends  RecyclerView.Adapter<RecyclerViewHolder>{
 
@@ -54,23 +55,6 @@ public class RecyclerAdapter extends  RecyclerView.Adapter<RecyclerViewHolder>{
         }
     }
 
-//    View.OnClickListener clickListener=new View.OnClickListener() {
-//        @Override
-//        public void onClick(View v) {
-//
-//            try {
-//                RecyclerViewHolder vholder = (RecyclerViewHolder) v.getTag();
-//                int position = vholder.getAdapterPosition();
-//
-//                removeAt(position);
-//
-//                Toast.makeText(context,"This is position "+position,Toast.LENGTH_SHORT ).show();
-//            }catch (Exception ex){
-//                return;
-//            }
-//        }
-//    };
-
     @Override
     public int getItemCount() {
         return city.size();
@@ -99,7 +83,7 @@ public class RecyclerAdapter extends  RecyclerView.Adapter<RecyclerViewHolder>{
         notifyItemRangeChanged(position, RecyclerAdapter.city.size());
     }
 
-    public void updateCity(ArrayList cities){
+    public void updateCity(ArrayList<String> cities){
         city.clear();
         city.addAll(cities);
     }
@@ -110,5 +94,23 @@ public class RecyclerAdapter extends  RecyclerView.Adapter<RecyclerViewHolder>{
     }
     public ArrayList<String> getCity(){
         return city;
+    }
+
+    public boolean isCityExists(ArrayList<String> input){
+
+        String checkName = input.get(0).toString();
+        String[] checkInfo = checkName.split(":");
+        checkName = checkInfo[0].toString();
+
+        ArrayList<String> cityNames = new ArrayList<String>();
+        for(int i = 0; i< city.size(); i++){
+            String item = city.get(i).toString();
+            String[] info = item.split(":");
+            cityNames.add(i, info[0]);
+        }
+
+        if(cityNames.contains(checkName))
+            return true;
+        else return false;
     }
 }

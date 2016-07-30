@@ -37,11 +37,7 @@ import com.example.geek.testingapp.service.GoogleMapsGeocodingService;
 import com.example.geek.testingapp.service.WeatherCacheService;
 import com.example.geek.testingapp.service.WeatherService;
 
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Arrays;
 
 public class WeatherActivity extends MainActivity implements WeatherServiceListener, GeocodingServiceListener, LocationListener {
 
@@ -49,7 +45,7 @@ public class WeatherActivity extends MainActivity implements WeatherServiceListe
     private TextView county_tv;
     private ImageView weatherIconImageView;
     private TextView temperatureTextView;
-    private TextView conditionTextView;
+    private TextView descriptionTextView;
     private TextView chill;
     private TextView direction;
     private TextView speed;
@@ -71,15 +67,15 @@ public class WeatherActivity extends MainActivity implements WeatherServiceListe
     private SharedPreferences preferences = null;
 
     String location = null;
+    String description = "";
     public static String temperatureUnit = "C";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.card_view_list);
 
         setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT); //заместо этого сделать отдельное landscape activity .
-
+        setContentView(R.layout.card_view_list);
         setSupportActionBar((Toolbar) findViewById(R.id.toolbar_weather));
         getSupportActionBar().setDisplayHomeAsUpEnabled(true);
         collapsingToolbar = (CollapsingToolbarLayout) findViewById(R.id.collapsing_toolbar);
@@ -87,7 +83,7 @@ public class WeatherActivity extends MainActivity implements WeatherServiceListe
 //        weatherIconImageView = (ImageView) findViewById(R.id.cv_weather_icon);
         county_tv = (TextView) findViewById(R.id.cv_country);
         temperatureTextView = (TextView) findViewById(R.id.cv_mTemperature);
-        conditionTextView = (TextView) findViewById(R.id.cv_description);
+        descriptionTextView = (TextView) findViewById(R.id.cv_description);
         chill = (TextView) findViewById(R.id.cv_mChill);
         direction = (TextView) findViewById(R.id.cv_mDirection);
         speed = (TextView) findViewById(R.id.cv_mSpeed);
@@ -95,6 +91,9 @@ public class WeatherActivity extends MainActivity implements WeatherServiceListe
         pressure = (TextView) findViewById(R.id.cv_mPressure);
         mRoot = (CoordinatorLayout) findViewById(R.id.coord_layout);
 //        visibility = (TextView) findViewById(R.id.visibility);
+
+        getWindow().getDecorView().setSystemUiVisibility(
+                View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN);
 
         preferences = PreferenceManager.getDefaultSharedPreferences(this);
 
@@ -123,6 +122,18 @@ public class WeatherActivity extends MainActivity implements WeatherServiceListe
                 dialog.setCancelable(false);
                 dialog.show();
 
+//                String[] request = location.split(",");
+//                final GetWIKI asyncTask = (GetWIKI) new GetWIKI(this){
+//                    @Override
+//                    public void processFinish(String output) {
+//                        if(output != null) {
+//                            Log.d("My log", "Результат поиска:\n'" + output + "'");
+//                            description = output;
+//                        }
+//                    }
+//                };
+//                asyncTask.execute(request);
+
                 Log.d("MSG FROM APP", location);
                 weatherService.refreshWeather(location);
             }
@@ -146,7 +157,7 @@ public class WeatherActivity extends MainActivity implements WeatherServiceListe
             collapsingToolbar.setTitle(mLocation[0].trim());
             county_tv.setText(mLocation[1].trim());
             temperatureTextView.setText(temperature);
-            conditionTextView.setText(R.string.kazan_descr);
+            descriptionTextView.setText(description);
             chill.setText(chillInfo + "");
             direction.setText(directionInfo + "");
             speed.setText(speedInfo + "");
@@ -190,72 +201,54 @@ public class WeatherActivity extends MainActivity implements WeatherServiceListe
         Wind wind = channel.getWind();
         Units units = channel.getUnits();
 
-        int resourceId = getResources().getIdentifier("drawable/icon_" + condition.getCode(), null, getPackageName());
+        int resourceId = getResources()
+                .getIdentifier("drawable/icon_" + condition.getCode(), null, getPackageName());
 
         @SuppressWarnings("deprecation")
         Drawable weatherIconDrawable = getResources().getDrawable(resourceId);
 //        weatherIconImageView.setImageDrawable(weatherIconDrawable);
 
         String temperatureLabel = getString(R.string.temperature_output, condition.getTemperature(), "C");
+
         String recLocation = channel.getLocation().toString();
+
         String[] mLocation = recLocation.split(",");
 
-        String str_wind = wind.getChill() + ":" + wind.getDirection() + ":" + wind.getSpeed() + " " + units.getSpeed();
-        String str_atmosphere = atmosphere.getHumidity() + ":" + atmosphere.getPressure() + " " + units.getPressure() + ":" + atmosphere.getVisibility() + " " + units.getDistance();
+        String str_wind = wind.getChill() + ":" +
+                wind.getDirection() + ":" + wind.getSpeed() + " " + units.getSpeed();
+
+        String str_atmosphere = atmosphere.getHumidity() + ":" +
+                atmosphere.getPressure() + " " + units.getPressure() + ":" +
+                            atmosphere.getVisibility() + " " + units.getDistance();
 
         collapsingToolbar.setTitle(mLocation[0].trim());
         county_tv.setText(mLocation[1].trim());
         temperatureTextView.setText(temperatureLabel);
-        conditionTextView.setText(condition.getDescription());
+        descriptionTextView.setText(condition.getDescription());
         chill.setText(wind.getChill() + "");
         direction.setText(wind.getDirection() + "");
         speed.setText(wind.getSpeed() + " " + units.getSpeed());
         humidity.setText(atmosphere.getHumidity() + " %");
         pressure.setText(atmosphere.getPressure() + " " + units.getPressure());
+        //        descriptionTextView.setText(condition.getDescription());
 //        visibility.setText(atmosphere.getVisibility() + " " + units.getDistance());
 
+        final ArrayList<String> arrayOfCities = adapter.getCity();
+        for(int i = 0; i< arrayOfCities.size(); i++){
+            String[] strToCheck = arrayOfCities.get(i).split(":");
+            if (strToCheck[0].matches(location)) {
+                String result = recLocation + ":" +
+                        temperatureLabel + ":" + condition.getDescription() + ":" +
+                                        resourceId + ":" + str_wind + ":" + str_atmosphere;
 
-        File cityFileWeather = new File(mFolder.getAbsolutePath() + "/cacheInfo.txt");
+                arrayOfCities.remove(i);
+                arrayOfCities.add(i, result);
 
-        try {
-            if (!mFolder.exists()) {
-                mFolder.mkdir();
+                arrayToUpdate = arrayOfCities;
+                manageData.update(arrayToUpdate);
             }
-            if (!cityFileWeather.exists()) {
-                cityFileWeather.createNewFile();
-            }
-        }catch (IOException e) {
-            e.printStackTrace();
         }
-
         Log.d("Weather APP", "Weather service success from WeatherActivity");
-        int index = 0;
-        for (String str : cities) {
-            String[] strToCheck = str.split(":");
-            if (strToCheck[0].matches(location) == true) {
-                try {
-                    String result = recLocation + ":" + temperatureLabel + ":" + condition.getDescription() + ":" + resourceId + ":" + str_wind + ":" + str_atmosphere;
-                    cities[index] = result;
-                    arrayToUpdate = new ArrayList<>(Arrays.asList(cities));
-
-                    FileOutputStream outputStream = openFileOutput(fileName, Context.MODE_PRIVATE);
-                    for (String st : cities) {
-                        try {
-                            String cache = st + "\n";
-                            outputStream.write(cache.getBytes());
-                        } catch (IOException e) {
-                            e.printStackTrace();
-                        }
-                    }
-                    outputStream.close();
-                    return;
-                }catch (Exception ex){
-                    Log.e("Weather APP", ex.toString());
-                    return;
-                }
-            }
-            index++;
-        }
     }
 
     @Override
@@ -327,7 +320,9 @@ public class WeatherActivity extends MainActivity implements WeatherServiceListe
                 return true;
 
             case R.id.update:
-                update();
+                if(isOnline()){
+                    update();
+                }
                 return true;
 
             default:

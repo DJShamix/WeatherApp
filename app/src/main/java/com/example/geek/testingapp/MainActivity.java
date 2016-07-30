@@ -29,20 +29,16 @@ import android.view.View;
 import android.view.Window;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.EditText;
-import android.widget.RelativeLayout;
 import android.widget.Toast;
 
 import com.example.geek.testingapp.recycler.RecyclerAdapter;
 import com.example.geek.testingapp.recycler.RecyclerItemClickListener;
 import com.example.geek.testingapp.service.GetWeather;
+import com.example.geek.testingapp.service.ManageData;
+import com.example.geek.testingapp.test.DBHelper;
 
-import java.io.BufferedReader;
-import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileOutputStream;
-import java.io.FileReader;
-import java.io.FileWriter;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 
@@ -51,7 +47,7 @@ public class MainActivity extends AppCompatActivity{
     static final int PICK_WEATHER_REQUEST = 1;  // The request code
 
     RecyclerView recyclerView;
-    RecyclerAdapter adapter;
+    public RecyclerAdapter adapter;
 
     private EditText txtInput;
     private SwipeRefreshLayout mRoot;
@@ -61,13 +57,14 @@ public class MainActivity extends AppCompatActivity{
     public final String fileName = "cacheInfo.txt"; //название файла кеша.
     public static String[] cities;
     FileOutputStream fop = null;
+    ManageData manageData;
     static File mFolder;
-    static File cityFile;
 
     AlertDialog.Builder ad;
-    Context context;        //часть удаления переделать потом.
+    Context context;
     int indexToRemove;
 
+    //TOdo переместить инициализацию элементов активити в asincTask
     //вызывается автоматически при создании Activity
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -88,23 +85,22 @@ public class MainActivity extends AppCompatActivity{
         recyclerView = (RecyclerView) findViewById(R.id.my_recycler_view);
         FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
         mRoot = (SwipeRefreshLayout) findViewById(R.id.swiperefresh);
-
-        mFolder = new File(getFilesDir() + "/");
-        cityFile = new File(mFolder.getAbsolutePath() + "/" + fileName);    //путь к файлу кеша
-
-        ArrayList<String> na = new ArrayList<String>(); //этот костыль потом переделать!
-        manageData("isFileExist", na);
-        manageData("read", na); //получаем данные из файла и записываем в cities
+        manageData = new ManageData(getFilesDir(), fileName);       //путь к файлу кеша
+        manageData.isFileExsists();
 
 
         //создаем ListView
-        ArrayList<String> citiesList = new ArrayList<>(Arrays.asList(cities));
+        ArrayList<String> citiesList = new ArrayList<>();
+        citiesList = manageData.read();
         adapter=new RecyclerAdapter(this, citiesList);
         recyclerView.setAdapter(adapter);
         recyclerView.setHasFixedSize(true);
+//        recyclerView.setLayoutManager(mlinearLayoutManager);
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
         recyclerView.addOnItemTouchListener(
-                new RecyclerItemClickListener(getApplicationContext(), recyclerView ,new RecyclerItemClickListener.OnItemClickListener() {
+                new RecyclerItemClickListener(getApplicationContext(),
+                        recyclerView ,new RecyclerItemClickListener.OnItemClickListener() {
+
                     @Override public void onItemClick(View view, int position) {
                         onItemClickAction(view, position);
                     }
@@ -157,14 +153,12 @@ public class MainActivity extends AppCompatActivity{
                 showInputDialog(view);
             }
         });
-
-
-
         toolbar.setClickable(true);
         toolbar.setBackgroundColor(Color.TRANSPARENT);
         setSupportActionBar(toolbar);
 
-//        updateInfo();
+        if(isOnline())
+            updateInfo();
     }
 
 
@@ -208,9 +202,9 @@ public class MainActivity extends AppCompatActivity{
 
         final String backup = adapter.forGetCity().get(indexToRemove);
 
-        RecyclerAdapter.forRemove(indexToRemove);
+        adapter.forRemove(indexToRemove);
         adapter.notifyItemRemoved(indexToRemove);
-        manageData("update", adapter.getCity());
+        manageData.update(adapter.getCity());
 
         final Snackbar snackbar = Snackbar.make(mRoot, "Удалено", Snackbar.LENGTH_LONG);
         snackbar.setActionTextColor(getResources().getColor(R.color.accent_color));
@@ -219,7 +213,7 @@ public class MainActivity extends AppCompatActivity{
             public void onClick(View view) {
                 adapter.addAt(backup, indexToRemove);
                 adapter.notifyDataSetChanged();
-                manageData("update", adapter.getCity());
+                manageData.update(adapter.getCity());
                 Snackbar snackbar1 = Snackbar.make(mRoot, "City is restored!", Snackbar.LENGTH_SHORT);
                 snackbar1.show();
             }
@@ -248,11 +242,10 @@ public class MainActivity extends AppCompatActivity{
                             public void onClick(DialogInterface dialog, int id) {
                                 hideSoftKeyboard(view);
                                     String newCity = editText.getText().toString();
-                                     if (newCity.matches("") != true && newCity.matches(" ") != true) {
+                                     if (!newCity.matches("") && !newCity.matches(" ")) {
                                          Log.d("My log", "Внесено:'" + newCity + "'");
                                          showDialog();
                                          addInfoToList(newCity);
-        //                                     weatherService.refreshWeather(newCity);
                                      }
                             }
                         })
@@ -283,7 +276,6 @@ public class MainActivity extends AppCompatActivity{
         imm.toggleSoftInput(InputMethodManager.HIDE_IMPLICIT_ONLY, 0);
     }
 
-
     //показывает WaitDialog, чтобы у юзера не было возможности "понажимать" во время обновления
     public void showDialog(){
         dialog = new ProgressDialog(this);
@@ -291,111 +283,6 @@ public class MainActivity extends AppCompatActivity{
         dialog.setCancelable(false);
         dialog.show();
     }
-
-
-    //для работы с файлом
-    public void manageData(String state, ArrayList<String> cityName) {
-        switch (state) {
-            case "write":
-                try {
-                    BufferedWriter output = new BufferedWriter(new FileWriter(cityFile, true));
-
-                    for(int i = 0; i< cityName.size(); i++){
-                        output.append(cityName.get(i));
-                        output.append("\n");
-                    }
-                    output.close();
-
-                    Toast.makeText(this, "Успешно добавлено", Toast.LENGTH_SHORT).show();
-                } catch (Exception ex) {
-                    Toast.makeText(this, "Error:" + ex, Toast.LENGTH_SHORT).show();
-                    return;
-                }
-                break;
-            case "read":
-                try {
-                    BufferedReader bufferedReader = new BufferedReader(new FileReader(cityFile));
-                    String receiveString = "";
-                    StringBuilder buffer = new StringBuilder();
-
-                    while ((receiveString = bufferedReader.readLine()) != null) {
-                        buffer.append(receiveString);
-                        if (!receiveString.matches(""))
-                            buffer.append("\n");
-                    }
-                    cities = buffer.toString().split("\n");
-                    bufferedReader.close();
-                    bufferedReader.close();
-                }
-                catch (IOException ex){
-                    Toast.makeText(this, "Error while try to read file", Toast.LENGTH_SHORT).show();
-                    return;
-                }
-                catch (Exception ex) {
-                    Toast.makeText(this, "Error:" + ex, Toast.LENGTH_SHORT).show();
-                    return;
-                }
-                break;
-            case "isFileExist":
-                try {
-
-                    if (!mFolder.exists()) {
-                        mFolder.mkdir();
-                    }
-                    if (!cityFile.exists()) {
-                        cityFile.createNewFile();
-
-                        ArrayList<String> citiesNew = new ArrayList<String>();
-                            citiesNew.add("Kazan', Tatarstan Republic:22°C:Partly Cloudy:2130837588");
-                            citiesNew.add("Moscow,  Moscow Federal City:25°C:Mostly Cloudy:2130837590");
-                            citiesNew.add("Sochi,  Krasnodar Krai:27°C:Mostly Sunny:2130837588");
-                            citiesNew.add("Los Angeles,  CA:18°C:Partly Cloudy:2130837590");
-                            citiesNew.add("Rostov-na-Donu,  Rostov Oblast:30°C:Sunny:2130837590");
-
-                        manageData("write", citiesNew);
-                    }
-                } catch (IOException e) {
-                    e.printStackTrace();
-                    return;
-                }
-                break;
-            case "update":
-                try{
-                    fop = new FileOutputStream(cityFile);
-
-                    // if file doesnt exists, then create it
-                    if (!cityFile.exists()) {
-                        cityFile.createNewFile();
-                    }
-
-                    ArrayList<String> itemsToUpdate = new ArrayList<String>();
-                    if(cityName != null) {
-                        itemsToUpdate = cityName;
-
-                        String cache = "";
-                        for (int i = 0; i < itemsToUpdate.size(); i++) {
-                            cache += itemsToUpdate.get(i) + "\n";
-                        }
-
-                        if (!cache.matches("") && !cache.matches(" ")) {
-                            fop.write(cache.getBytes());
-                            fop.flush();
-                            fop.close();
-
-                            cities = cache.split("\n");
-                        } else
-                            Toast.makeText(this, "cache is null!", Toast.LENGTH_SHORT).show();
-                    }
-                    System.out.println("Done");
-                }catch (IOException ex){
-                    Toast.makeText(this, R.string.failedToUpdate, Toast.LENGTH_SHORT).show();
-                    return;
-                }
-            default:
-                break;
-        }
-    }
-
 
     //добавляет новый город в БД
     private void addInfoToList(final String input){
@@ -406,36 +293,25 @@ public class MainActivity extends AppCompatActivity{
             @Override
             public void processFinish(ArrayList<String> output) {
                 if(output != null) {
-                    File cityFileWeather = new File(mFolder.getAbsolutePath() + "/" + fileName);
 
-                    try {
-                        if (!mFolder.exists()) {
-                            mFolder.mkdir();
-                        }
-                        if (!cityFileWeather.exists()) {
-                            cityFileWeather.createNewFile();
-                        }
-                    } catch (IOException e) {
-                        e.printStackTrace();
-                    }
+                    if (!adapter.isCityExists(output)){
 
-                    try {
+                        manageData.write(output);
+
                         Log.d("My log", "Результат поиска:\n'" + output.get(0).toString() + "'");
-                        BufferedWriter outputFile = new BufferedWriter(new FileWriter(cityFileWeather, true));
-                        outputFile.append(output.get(0).toString());
-                        outputFile.append("\n");
-                        outputFile.close();
-
-                        RecyclerAdapter.forAdd(output.get(0).toString(), adapter.getItemCount()+1);
+                        adapter.forAdd(output.get(0).toString(), adapter.getItemCount()+1);
                         adapter.notifyItemInserted(adapter.getItemCount());
                         adapter.notifyDataSetChanged();
-                    } catch (Exception ex) {
-                        Log.d("My log", "Ошибка " + ex);
-                        return;
+                        recyclerView.getLayoutManager()
+                                .smoothScrollToPosition(recyclerView, null, adapter.getItemCount() - 1);
+                    }else{
+                        Snackbar snackbar = Snackbar
+                                .make(mRoot, R.string.item_exists, Snackbar.LENGTH_LONG);
+                        snackbar.show();
                     }
 
-                }
-                else Toast.makeText(getApplicationContext(), "No weather found for city: " + input, Toast.LENGTH_SHORT).show();
+                } else Toast.makeText(getApplicationContext(),
+                        getString(R.string.no_weather_found) + input, Toast.LENGTH_SHORT).show();
             }
         };
         asyncTask.execute(arrayList);
@@ -462,7 +338,7 @@ public class MainActivity extends AppCompatActivity{
                         adapter.updateCity(output);
                         adapter.notifyDataSetChanged();
 
-                        manageData("update", adapter.getCity());
+                        manageData.update(adapter.getCity());
                     }else{
                         Toast.makeText(getApplicationContext(), R.string.failedToUpdate, Toast.LENGTH_SHORT).show();
                     }

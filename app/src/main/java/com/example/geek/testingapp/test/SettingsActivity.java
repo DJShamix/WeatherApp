@@ -22,7 +22,7 @@
  * THE SOFTWARE.
  *
  */
-package com.example.geek.testingapp;
+package com.example.geek.testingapp.test;
 
 import android.content.res.Configuration;
 import android.os.Bundle;
@@ -36,6 +36,7 @@ import android.view.MenuInflater;
 import android.view.View;
 import android.view.ViewGroup;
 
+import com.example.geek.testingapp.R;
 import com.example.geek.testingapp.fragments.SettingsFragment;
 
 public class SettingsActivity extends PreferenceActivity {

@@ -110,7 +110,6 @@ public class GetWeather extends AsyncTask<ArrayList<String>, Void, ArrayList<Str
                 String region = locationData.optString("region");
                 String country = locationData.optString("country");
                 String locationInfo = String.format("%s, %s", locationData.optString("city"), (region.length() != 0 ? region : country));
-//  "°C"
 
                 String output = locationInfo + ":" + temperature + ":" + description + ":" + resourceId + ":" + wind + ":" + atmosphere;
                 arr.add(output);

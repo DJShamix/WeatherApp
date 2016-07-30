@@ -38,4 +38,7 @@
 
 В 2015 году Казань посетило 2,1 млн. туристов.</string>
     <string name="failedToUpdate">Error: failed to update</string>
+    <string name="item_exists">Этот город уже есть в базе</string>
+    <string name="no_weather_found">"No weather found for city: "</string>
+    <string name="weather_activity">Weather activity</string>
 </resources>

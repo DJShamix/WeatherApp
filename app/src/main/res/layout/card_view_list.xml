@@ -40,7 +40,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="?attr/actionBarSize"
                 app:layout_collapseMode="pin"
-                app:popupTheme="@style/ThemeOverlay.AppCompat.Light" />
+                app:popupTheme="@style/ThemeOverlay.AppCompat.Light"/>
 
         </android.support.design.widget.CollapsingToolbarLayout>
 
@@ -87,7 +87,7 @@
                         android:layout_height="wrap_content"
                         android:layout_below="@+id/cv_country"
                         android:layout_margin="@dimen/spacing_large"
-                        android:text="@string/kazan_descr"
+                        android:text=""
                         android:maxLines="8"
                         android:textAppearance="@style/TextAppearance.AppCompat.Body1"/>
                 </RelativeLayout>
